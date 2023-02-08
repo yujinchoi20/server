@@ -1,2 +1,2 @@
 # Python Crawling Anythings :smile:
-## 1. web crawling 
+## 1. web crawling (use selenium)

@@ -1,6 +1,6 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-print("Content-type:application/json;charset=utf-8\r\n")
+# #!/usr/bin/python3
+# # -*- coding: utf-8 -*-
+# print("Content-type:application/json;charset=utf-8\r\n")
 
 import sys
 import io
@@ -9,12 +9,16 @@ import json
 import cgitb
 import cgi
 import codecs
+from bs4 import BeautifulSoup
 import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.select import Select
+
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 #encoding
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding = 'utf-8')
@@ -36,17 +40,18 @@ ddlMonth2 = None
 ddlDay2 = None
 json_Result = dict()
 
-login_Url = 'https://sso.donga.ac.kr/svc/tk/Auth.eps?id=student&ac=Y&ifa=N&RelayState=%2f&'
-overnight_Form_Url = 'http://student.donga.ac.kr/SudExam/SUD/XSUN0040.aspx'
+# login_Url = 'https://sso.donga.ac.kr/svc/tk/Auth.eps?id=student&ac=Y&ifa=N&RelayState=%2f&' #í†µí•© ë¡œê·¸ì¸
+login_Url = 'https://hanlim.donga.ac.kr/subLogin/hanlim/view.do' #í•œë¦¼ìƒí™œê´€ ë¡œê·¸ì¸
+overnight_Form_Url = 'http://student.donga.ac.kr/SudExam/SUD/XSUN0040.aspx' #ì™¸ë°•ì‹ ì²­
 
 now = datetime.datetime.now()
 hour = now.hour
 minute = now.minute
 
-#¿Ü¹Ú½ÅÃ» ±â°£ÀÌ ¾Æ´Ò°æ¿ì False, ¿Ü¹Ú½ÅÃ» ±â°£ÀÌ ¸Â´Â °æ¿ì True ¹İÈ¯
-def check_Exists_By_XPATH(xpath):
+#ì™¸ë°•ì‹ ì²­ ê¸°ê°„ì´ ì•„ë‹ê²½ìš° False, ì™¸ë°•ì‹ ì²­ ê¸°ê°„ì´ ë§ëŠ” ê²½ìš° True ë°˜í™˜
+def check_Exists_By_XPATH_1(xpath):
     try:
-        driver.find_element(xpath)
+        Select(driver.find_element(By.XPATH, xpath))
     except Exception as e: 
         return False
     return True
@@ -58,7 +63,7 @@ if hour >= 23 and minute >= 30:
 
 else: 
     try:
-        # formÀ¸·Î µ¥ÀÌÅÍ ¹Ş¾Æ¿À±â
+        # formìœ¼ë¡œ ë°ì´í„° ë°›ì•„ì˜¤ê¸°
         # userid = form['userid'].value
         # passwd = form['passwd'].value
         # ddl_place = form['ddl_place'].value
@@ -68,18 +73,18 @@ else:
         # ddlYear2 = form['ddlYear2'].value
         # ddlMonth2 = form['ddlMonth2'].value
         # ddlDay2 = form['ddlDay2'].value
-        userid = None
-        passwd = None
-        ddl_place = 'µ¿¾Æ¸®¹æ'
+        userid = '2024354'
+        passwd = 'tusocl0710*^^*'
+        ddl_place = 'ë™ì•„ë¦¬ë°©'
         ddlYear1 = '2023'
         ddlMonth1 = '2'
-        ddlDay1 = '22'
+        ddlDay1 = '27'
         ddlYear2 = '2023'
-        ddlMonth2 = '2'
-        ddlDay2 = '23'
+        ddlMonth2 = '3'
+        ddlDay2 = '1'
     
     except Exception as e:
-        json_Result['error'] = "-2" # µ¥ÀÌÅÍ Á¦´ë·Î ¾È¿È
+        json_Result['error'] = "-2" # ë°ì´í„° ì œëŒ€ë¡œ ì•ˆì˜´
     
     else:
         #selenium version 4.8.0
@@ -94,35 +99,29 @@ else:
         driver.get(login_Url)
         driver.implicitly_wait(3)
 
-        #login
-        driver.find_element(By.ID, 'display_user_id').send_keys(userid)
-        driver.find_element(By.ID, 'display_user_password').send_keys(passwd)
-        driver.find_element(By.CLASS_NAME, 'btn_login').click() #login btn
+        #login (í†µí•©ë¡œê·¸ì¸ -> í•œë¦¼ìƒí™œê´€, ë¡œê·¸ì¸ ì°½ ë³€ê²½) 
+        driver.find_element(By.ID, 'userId').send_keys(userid)
+        driver.find_element(By.ID, 'userPwd').send_keys(passwd)
+        driver.find_element(By.CLASS_NAME, '_loginSubmit').click() #login btn
         driver.get(overnight_Form_Url)
+        driver.implicitly_wait(3)
+            
+        # ì´ë¦„ ìì²´ê°€ ê³µë°±ì´ì—¬ë„ ëŒ€ìƒìê°€ ì•„ë‹ˆë¼ëŠ” ì˜ë¯¸ 
+        if(driver.find_element(By.XPATH, '/html/head/script')):
+            json_Result['error'] = "-1"
         
-        try:
-            alert = driver.switch_to.alert() 
-            # ÇöÀç(02.24) ÀÌ ¿À·ù´Â ¿Ü¹Ú½ÅÃ» ±â°£ÀÌ ¾Æ´Ï¶ó¼­ ´ë»óÀÚÀÎÁö ¾Æ´ÑÁö ¾Ë·ÁÁÖ´Â alertÃ¢ÀÌ ¾È ¶ß´Â °Å ÀÏ ¼öµµÀÖÀ½.
-            # ´ë»óÀÚ°¡ ¾Æ´Ï¸é alert Ã¢ÀÌ ¶ß´Âµ¥, ¸¸¾à ´ë»óÀÚ°¡ ¸ÂÀ¸¸é alert Ã¢ÀÌ ¾È ¶ä!
-            # ±×·¡¼­ ´ë»óÀÚ ¾ÆÀÌµğ·Î ·Î±×ÀÎÇÏ¸é ÀÌ ºÎºĞ¿¡¼­ ¿À·ù ¹ß»ı 
-            if "´ë»óÀÚ°¡ ¾Æ´Õ´Ï´Ù" in alert.text:
-                json_Result['error'] = "-1"
-            alert.accept()
-            
-        except Exception as e:
-            pass
+        else:
             #place
-            # ¿©±â¼­ ¸·È÷´Â °Å¸é ¿Ü¹Ú½ÅÃ» ±â°£ÀÌ ¾Æ´Ï¶ó´Â ÀÇ¹Ì 
-            # -7 -> ¿Ü¹Ú½ÅÃ» ±â°£ÀÌ ¾Æ´Ô 
-            # xpathÀÇ Á¸Àç ¿©ºÎ¸¦ check_Exists_By_XPATH() ¸Ş¼Òµå¸¦ ÅëÇØ È®ÀÎ -> False/True¸¦ ¹İÈ¯
+            # ì—¬ê¸°ì„œ ë§‰íˆëŠ” ê±°ë©´ ì™¸ë°•ì‹ ì²­ ê¸°ê°„ì´ ì•„ë‹ˆë¼ëŠ” ì˜ë¯¸ 
+            # -7 -> ì™¸ë°•ì‹ ì²­ ê¸°ê°„ì´ ì•„ë‹˜ 
+            # xpathì˜ ì¡´ì¬ ì—¬ë¶€ë¥¼ check_Exists_By_XPATH() ë©”ì†Œë“œë¥¼ í†µí•´ í™•ì¸ -> False/Trueë¥¼ ë°˜í™˜
             
-            ddl_Chk = check_Exists_By_XPATH('//*[@id="ddl_place"]')
+            ddl_Chk = check_Exists_By_XPATH_1('//*[@id="ddl_place"]')
             # print(ddl_Chk)
             
             if ddl_Chk:      
                 ddl_Place = Select(driver.find_element(By.XPATH, '//*[@id="ddl_place"]'))
                 ddl_Place.select_by_visible_text(str(ddl_place)) #select_by_value -> select_by_visible_text 
-                # select_by_value('01') 
 
                 #date
                 ddl_Year1 = Select(driver.find_element(By.XPATH, '//*[@id="ddlYear1"]'))
@@ -143,18 +142,18 @@ else:
 
                 try:
                     alert = driver.switch_to.alert
-                    if "Áßº¹" in alert.text:
+                    if "ì¤‘ë³µ" in alert.text:
                         json_Result['error'] = "-3"
-                    elif "´ë»óÀÚ" in alert.text:
+                    elif "ëŒ€ìƒì" in alert.text:
                         json_Result['error'] = "-1"  
                     else:
                         json_Result['error'] = alert.text
                     alert.accept()
                 except Exception as e:
                     html = driver.page_source
-                    if "Á¤»óÀûÀ¸·Î ¿Ï·áµÇ¾ú½À´Ï´Ù" in html:
+                    if "ì •ìƒì ìœ¼ë¡œ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤" in html:
                         json_Result['error'] = "1" 
-                    elif "ÀÛÀ»¼ö ¾ø½À´Ï´Ù":
+                    elif "ì‘ì„ìˆ˜ ì—†ìŠµë‹ˆë‹¤":
                         json_Result['error'] = "-4"
                     else:
                         json_Result['error'] = "-5"

@@ -9,7 +9,6 @@ import json
 import cgitb
 import cgi
 import codecs
-import time
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -55,15 +54,16 @@ if hour >= 23 and minute >= 30:
 
 else:
     try:
-        userid = '.'
-        passwd = '.'
-        ddl_place = '동아리방'
-        ddlYear1 = '2023'
-        ddlMonth1 = '3'
-        ddlDay1 = '4'
-        ddlYear2 = '2023'
-        ddlMonth2 = '3'
-        ddlDay2 = '5'
+        userid = form['userid'].value
+        passwd = form['passwd'].value
+        ddl_place = form['ddl_place'].value
+        ddlYear1 = int(form['ddlYear1'].value)
+        ddlMonth1 = int(form['ddlMonth1'].value)
+        ddlDay1 = int(form['ddlDay1'].value)
+        ddlYear2 = int(form['ddlYear2'].value)
+        ddlMonth2 = int(form['ddlMonth2'].value)
+        ddlDay2 = int(form['ddlDay2'].value)
+
 
     except Exception as e:
         json_Result['error'] = "-2"  # 데이터 제대로 안옴
